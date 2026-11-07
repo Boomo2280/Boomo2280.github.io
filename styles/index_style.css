@@ -1,0 +1,309 @@
+:root {
+    --blue: #1e6fe0;
+    --blue-soft: #4a90e2;
+    --navy: #00007a;
+    --amber: #c98a2b;
+    --teal: #25a6c9;
+    --ink: #10192b;
+    --muted: #5b667a;
+    --line: #e3e8f0;
+    --bg: #fff;
+    --tint: #f4f8fd;
+    --grad: linear-gradient(90deg, var(--amber), #6b8fa8 45%, var(--blue) 75%, var(--teal));
+}
+
+* {
+    box-sizing: border-box
+}
+
+html {
+    scroll-behavior: smooth
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg)
+}
+
+main.portal {
+    flex: 1;
+    width: 100%
+}
+
+.portal {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 20px 72px
+}
+
+.portal h1 {
+    font-size: clamp(34px, 5vw, 60px);
+    margin: 0 0 8px;
+    text-align: center;
+    font-weight: 700;
+    background: var(--grad);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 14s ease-in-out infinite alternate
+}
+
+@keyframes shine {
+    to {
+        background-position: 100% center
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal h1 {
+        animation: none
+    }
+}
+
+.portal .sub {
+    text-align: center;
+    color: var(--muted);
+    margin: 0 0 40px
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px
+}
+
+.card {
+    background: var(--grad) top / 100% 4px no-repeat, #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 6px 24px rgba(30, 111, 224, .07);
+    min-width: 0
+}
+
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px
+}
+
+.card h2 small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted)
+}
+
+.c-sched {
+    grid-column: span 7
+}
+
+.c-weather {
+    grid-column: span 5
+}
+
+.c-bus {
+    grid-column: span 5
+}
+
+.c-news {
+    grid-column: span 7
+}
+
+@media(max-width:860px) {
+
+    .c-sched,
+    .c-weather,
+    .c-bus,
+    .c-news {
+        grid-column: span 12
+    }
+}
+
+/* расписание */
+.lesson {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line)
+}
+
+.lesson:first-of-type {
+    border-top: 0
+}
+
+.lesson .time {
+    font-weight: 700;
+    color: var(--blue);
+    font-variant-numeric: tabular-nums
+}
+
+.lesson .time span {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 13px
+}
+
+.lesson .name {
+    font-weight: 600
+}
+
+.lesson .meta {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 2px
+}
+
+.pdf-link {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--blue);
+    text-decoration: none
+}
+
+.pdf-link:hover {
+    text-decoration: underline
+}
+
+/* погода */
+.w-main {
+    display: flex;
+    align-items: center;
+    gap: 16px
+}
+
+.w-temp {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent
+}
+
+.w-desc {
+    color: var(--muted)
+}
+
+.w-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 20px
+}
+
+.w-row div {
+    background: var(--tint);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--muted)
+}
+
+.w-row b {
+    display: block;
+    color: var(--ink);
+    font-size: 17px
+}
+
+/* автобус */
+.bus-next {
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    color: #fff;
+    border-radius: 14px;
+    padding: 18px 20px
+}
+
+.bus-next .min {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1
+}
+
+.bus-next .at {
+    opacity: .85;
+    margin-top: 6px;
+    font-size: 14px
+}
+
+.bus-later {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 15px
+}
+
+.bus-later li {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-top: 1px solid var(--line)
+}
+
+/* новости */
+.news-item {
+    display: block;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit
+}
+
+.news-item:first-of-type {
+    border-top: 0
+}
+
+.news-item:hover .nt {
+    color: var(--blue)
+}
+
+.nt {
+    font-weight: 600;
+    transition: color .15s
+}
+
+.nd {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 2px 0 4px
+}
+
+.ns {
+    font-size: 14px;
+    color: var(--muted)
+}
+
+.empty,
+.err {
+    color: var(--muted);
+    font-size: 14px
+}
+
+.btn {
+    display: inline-block;
+    background: var(--blue-soft);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 18px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 14px
+}
+
+:focus-visible {
+    outline: 3px solid var(--teal);
+    outline-offset: 2px
+}

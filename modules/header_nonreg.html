@@ -1,0 +1,97 @@
+<a class="sh-logo" href="https://kf.mauniver.ru/" title="Главная страница Кировского филиала МАУ">
+    <img src="images/logo_mau_color.svg" alt="МАУ — Кировский филиал">
+</a>
+<nav class="sh-actions" aria-label="Вход и регистрация">
+    <a class="sh-btn" href="Register.php"><span>Зарегистрироваться</span></a>
+    <a class="sh-btn" href="Login.php"><span>Войти</span></a>
+</nav>
+
+<style>
+    .site-header {
+        --pad: max(20px, calc((100% - 1180px) / 2 + 20px));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        min-height: 76px;
+        padding: 8px var(--pad);
+        border-bottom: 1px solid rgba(150, 149, 149, .4);
+        background: #fff;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .site-header .sh-logo img {
+        display: block;
+        height: 48px;
+        width: auto;
+    }
+
+    .site-header .sh-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .site-header .sh-btn {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 44px;
+        padding: 0 20px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        white-space: nowrap;
+        background: linear-gradient(135deg, #3d84e0, #5aa0e6);
+        transition: transform .3s ease, box-shadow .3s ease;
+    }
+
+    .site-header .sh-btn span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .site-header .sh-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background-image: linear-gradient(90deg, #3d84e0, #2fb3a8, #6fd08a, #2fb3a8, #3d84e0);
+        background-repeat: repeat-x;
+        background-size: 220px 100%;
+        opacity: 0;
+        transition: opacity .9s ease;
+        animation: sh-aurora 9s linear infinite;
+    }
+
+    .site-header .sh-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(61, 132, 224, .35);
+    }
+
+    .site-header .sh-btn:hover::before {
+        opacity: .85;
+    }
+
+    .site-header .sh-btn:active {
+        transform: translateY(0);
+    }
+
+    @keyframes sh-aurora {
+        from { background-position-x: 0; }
+        to { background-position-x: 220px; }
+    }
+
+    @media (max-width: 560px) {
+        .site-header { flex-wrap: wrap; justify-content: center; }
+        .site-header .sh-btn { height: 40px; padding: 0 14px; font-size: 14px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .site-header .sh-btn::before { animation: none; }
+    }
+</style>

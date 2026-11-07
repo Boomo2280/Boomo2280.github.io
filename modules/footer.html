@@ -1,0 +1,76 @@
+<a class="mau_footer_logo_a" href="https://kf.mauniver.ru/" title="Главная страница Кировского филиала МАУ">
+    <img class="mau_footer_logo" src="images/logo_mau_bnw_portal.svg" alt="МАУ — Кировский филиал, студенческий портал">
+</a>
+<div class="social_media">
+    <p>Переходите на наши социальные сети!</p>
+    <div class="social_media_links">
+        <!-- Вставьте реальные ссылки вместо # -->
+        <a href="#" aria-label="Telegram"><img src="images/telegram_logo.svg" alt=""></a>
+        <a href="#" aria-label="ВКонтакте"><img src="images/vk_logo.svg" alt=""></a>
+        <a href="#" aria-label="MAX"><img src="images/max_logo.svg" alt=""></a>
+        <a href="#" aria-label="Одноклассники"><img src="images/ok_logo.svg" alt=""></a>
+        <a href="#" aria-label="Rutube"><img src="images/rutube_logo.svg" alt=""></a>
+    </div>
+</div>
+
+<style>
+    .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin: 48px 0 0;
+        padding: 32px max(20px, calc((100% - 1180px) / 2 + 20px));
+        color: #fff;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        background-color: #00007a;
+        background-image:
+            radial-gradient(ellipse at 40% 0%, #0088ff 0%, transparent 45%),
+            radial-gradient(ellipse at 100% 100%, #2aa5d8 0%, transparent 50%),
+            radial-gradient(ellipse at 0% 100%, #00856b 0%, transparent 35%),
+            radial-gradient(ellipse at 75% 20%, #0a3fc0 0%, transparent 45%);
+    }
+
+    .footer .mau_footer_logo {
+        display: block;
+        width: clamp(200px, 24vw, 320px);
+        height: auto;
+    }
+
+    .footer .social_media {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .footer .social_media p {
+        margin: 0;
+        font-size: 15px;
+    }
+
+    .footer .social_media_links {
+        display: flex;
+        gap: 12px;
+    }
+
+    .footer .social_media_links a {
+        display: block;
+        transition: transform .2s ease;
+    }
+
+    .footer .social_media_links a:hover {
+        transform: translateY(-3px);
+    }
+
+    .footer .social_media img {
+        display: block;
+        width: 34px;
+        height: 34px;
+    }
+
+    @media (max-width: 640px) {
+        .footer { justify-content: center; text-align: center; }
+    }
+</style>

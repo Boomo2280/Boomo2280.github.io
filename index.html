@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Студенческий портал — главная</title>
+  <link rel="icon" href="images/icon.png">
+  <link rel="stylesheet" href="styles/index_style.css">
+</head>
+
+<body>
+  <header class="site-header" id="header"></header>
+
+  <main class="portal">
+    <h1>Ваш день в университете</h1>
+    <p class="sub">Расписание, автобус, погода и новости — в одном месте</p>
+
+    <div class="grid">
+      <section class="card c-sched">
+        <h2>Расписание на завтра <small id="sched-date"></small></h2>
+        <div id="sched">
+          <p class="empty">Загрузка…</p>
+        </div>
+        <a id="sched-pdf" class="pdf-link" href="#" hidden>Открыть исходный PDF</a>
+      </section>
+
+      <section class="card c-weather">
+        <h2>Погода <small id="w-city"></small></h2>
+        <div id="weather">
+          <p class="empty">Загрузка…</p>
+        </div>
+      </section>
+
+      <section class="card c-bus">
+        <h2>Ближайший автобус <small id="bus-stop"></small></h2>
+        <div id="bus">
+          <p class="empty">Загрузка…</p>
+        </div>
+      </section>
+
+      <section class="card c-news">
+        <h2>Новости университета <small>с официального сайта</small></h2>
+        <div id="news">
+          <p class="empty">Загрузка…</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script>
+    /* ===== МОДУЛИ (header / footer) ===== */
+    async function loadModule(id, url) {
+      try {
+        const html = await (await fetch(url)).text();
+        const box = document.getElementById(id);
+        box.innerHTML = html;
+        box.querySelectorAll("script").forEach(old => {   // чтобы скрипты модуля тоже выполнялись
+          const s = document.createElement("script");
+          s.textContent = old.textContent;
+          old.replaceWith(s);
+        });
+      } catch (e) { console.error("Модуль не загружен:", url, e); }
+    }
+    loadModule("header", "modules/header_nonreg.html");
+    loadModule("footer", "modules/footer.html");
+
+    /* ===== НАСТРОЙКИ ===== */
+    const CONFIG = {
+      city: "Кировск",
+      lat: 67.61, lon: 33.66,            // координаты для погоды
+      dataPath: "data/",                  // папка с schedule.json, bus.json, news.json
+      newsLimit: 5
+    };
+
+    /* ===== ВСПОМОГАТЕЛЬНОЕ ===== */
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const getJSON = async f => {
+      const r = await fetch(CONFIG.dataPath + f + "?t=" + Date.now());
+      if (!r.ok) throw new Error(f + " " + r.status);
+      return r.json();
+    };
+    const fail = (id, text) => { $(id).innerHTML = `<p class="err">${text}</p>`; };
+
+    /* ===== РАСПИСАНИЕ =====
+    schedule.json: { "date":"2026-11-03", "pdf":"https://...", "lessons":[
+      {"start":"08:30","end":"10:00","name":"Математика","room":"214","teacher":"Иванов И.И."} ] } */
+    async function loadSchedule() {
+      try {
+        const d = await getJSON("schedule.json");
+        $("sched-date").textContent = d.date ? new Date(d.date).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" }) : "";
+        $("sched").innerHTML = d.lessons?.length ? d.lessons.map(l => `
+      <div class="lesson">
+        <div class="time">${esc(l.start)}<span>${esc(l.end)}</span></div>
+        <div><div class="name">${esc(l.name)}</div>
+        <div class="meta">${[l.room && "ауд. " + l.room, l.teacher].filter(Boolean).map(esc).join(" · ")}</div></div>
+      </div>`).join("") : '<p class="empty">На завтра занятий нет.</p>';
+        if (d.pdf) { const a = $("sched-pdf"); a.href = d.pdf; a.hidden = false; }
+      } catch (e) { fail("sched", "Расписание пока недоступно."); }
+    }
+
+    /* ===== ПОГОДА (Open-Meteo, без ключа) ===== */
+    const WMO = {
+      0: "Ясно", 1: "Преимущественно ясно", 2: "Переменная облачность", 3: "Пасмурно", 45: "Туман", 48: "Изморозь",
+      51: "Морось", 53: "Морось", 55: "Сильная морось", 61: "Небольшой дождь", 63: "Дождь", 65: "Сильный дождь",
+      71: "Небольшой снег", 73: "Снег", 75: "Сильный снегопад", 80: "Ливень", 81: "Ливень", 82: "Сильный ливень",
+      85: "Снегопад", 86: "Сильный снегопад", 95: "Гроза", 96: "Гроза с градом", 99: "Гроза с градом"
+    };
+    async function loadWeather() {
+      $("w-city").textContent = CONFIG.city;
+      try {
+        const u = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.lat}&longitude=${CONFIG.lon}` +
+          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&wind_speed_unit=ms&timezone=auto`;
+        const c = (await (await fetch(u)).json()).current;
+        $("weather").innerHTML = `
+      <div class="w-main"><div class="w-temp">${Math.round(c.temperature_2m)}°</div>
+      <div class="w-desc">${esc(WMO[c.weather_code] || "—")}</div></div>
+      <div class="w-row">
+        <div>Ощущается<b>${Math.round(c.apparent_temperature)}°</b></div>
+        <div>Ветер<b>${Math.round(c.wind_speed_10m)} м/с</b></div>
+        <div>Влажность<b>${c.relative_humidity_2m}%</b></div>
+      </div>`;
+      } catch (e) { fail("weather", "Не удалось получить погоду."); }
+    }
+
+    /* ===== АВТОБУС =====
+    bus.json: { "stop":"Название остановки", "route":"№ маршрута", "weekday":["07:10","07:40",...], "weekend":["09:00",...] }
+    Ближайший рейс считается в браузере. */
+    async function loadBus() {
+      try {
+        const d = await getJSON("bus.json");
+        $("bus-stop").textContent = d.stop || "";
+        const now = new Date(), day = now.getDay();
+        const list = (day === 0 || day === 6 ? d.weekend : d.weekday) || [];
+        const mins = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const cur = now.getHours() * 60 + now.getMinutes();
+        const next = list.filter(t => mins(t) >= cur);
+        if (!next.length) { $("bus").innerHTML = '<p class="empty">На сегодня рейсов больше нет.</p>'; return; }
+        const left = mins(next[0]) - cur;
+        $("bus").innerHTML = `
+      <div class="bus-next"><div class="min">${left === 0 ? "сейчас" : left + " мин"}</div>
+      <div class="at">${d.route ? "Маршрут " + esc(d.route) + " · " : ""}отправление в ${esc(next[0])}</div></div>
+      <ul class="bus-later">${next.slice(1, 4).map(t => `<li><span>Следующий</span><b>${esc(t)}</b></li>`).join("")}</ul>`;
+      } catch (e) { fail("bus", "Расписание автобуса недоступно."); }
+    }
+
+    /* ===== НОВОСТИ =====
+    news.json: [ {"title":"...","date":"2026-11-01","summary":"...","url":"https://..."} ] */
+    async function loadNews() {
+      try {
+        const list = (await getJSON("news.json")).slice(0, CONFIG.newsLimit);
+        $("news").innerHTML = list.length ? list.map(n => `
+      <a class="news-item" href="${esc(n.url)}" target="_blank" rel="noopener">
+        <div class="nt">${esc(n.title)}</div>
+        <div class="nd">${n.date ? new Date(n.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : ""}</div>
+        <div class="ns">${esc(n.summary)}</div>
+      </a>`).join("") : '<p class="empty">Новостей пока нет.</p>';
+      } catch (e) { fail("news", "Новости пока недоступны."); }
+    }
+
+    loadSchedule(); loadWeather(); loadBus(); loadNews();
+    setInterval(loadBus, 60000);        // автобус — раз в минуту
+    setInterval(loadWeather, 600000);   // погода — раз в 10 минут
+  </script>
+</body>
+
+</html>
