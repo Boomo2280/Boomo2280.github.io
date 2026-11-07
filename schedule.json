@@ -1,4 +1,6 @@
-{"date":"2026-11-03","pdf":"https://kf.mauniver.ru/","lessons":[
-{"start":"08:30","end":"10:00","name":"Математика (пример)","room":"214","teacher":"Иванов И.И."},
-{"start":"10:10","end":"11:40","name":"Информатика (пример)","room":"305","teacher":"Петрова А.С."},
-{"start":"12:10","end":"13:40","name":"Физика (пример)","room":"118","teacher":"Сидоров П.П."}]}
+{
+  "date": "2026-11-09",
+  "pdf": "https://kf.mauniver.ru/raspisanie/09.11.2026_s.pdf",
+  "lessons": [],
+  "image": "schedule.png"
+}

@@ -62,7 +62,7 @@
           s.textContent = old.textContent;
           old.replaceWith(s);
         });
-      } catch (e) { console.error("Модуль не загружен:", url, e); }
+      } catch (e) {console.error("Модуль не загружен:", url, e);}
     }
     loadModule("header", "modules/header_nonreg.html");
     loadModule("footer", "modules/footer.html");
@@ -77,13 +77,13 @@
 
     /* ===== ВСПОМОГАТЕЛЬНОЕ ===== */
     const $ = id => document.getElementById(id);
-    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
     const getJSON = async f => {
       const r = await fetch(CONFIG.dataPath + f + "?t=" + Date.now());
       if (!r.ok) throw new Error(f + " " + r.status);
       return r.json();
     };
-    const fail = (id, text) => { $(id).innerHTML = `<p class="err">${text}</p>`; };
+    const fail = (id, text) => {$(id).innerHTML = `<p class="err">${text}</p>`;};
 
     /* ===== РАСПИСАНИЕ =====
     schedule.json: { "date":"2026-11-03", "pdf":"https://...", "lessons":[
@@ -91,15 +91,12 @@
     async function loadSchedule() {
       try {
         const d = await getJSON("schedule.json");
-        $("sched-date").textContent = d.date ? new Date(d.date).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" }) : "";
-        $("sched").innerHTML = d.lessons?.length ? d.lessons.map(l => `
-      <div class="lesson">
-        <div class="time">${esc(l.start)}<span>${esc(l.end)}</span></div>
-        <div><div class="name">${esc(l.name)}</div>
-        <div class="meta">${[l.room && "ауд. " + l.room, l.teacher].filter(Boolean).map(esc).join(" · ")}</div></div>
-      </div>`).join("") : '<p class="empty">На завтра занятий нет.</p>';
-        if (d.pdf) { const a = $("sched-pdf"); a.href = d.pdf; a.hidden = false; }
-      } catch (e) { fail("sched", "Расписание пока недоступно."); }
+        $("sched-date").textContent = d.date ? new Date(d.date).toLocaleDateString("ru-RU", {weekday: "long", day: "numeric", month: "long"}) : "";
+        $("sched").innerHTML = d.image
+          ? `<img class="sched-img" src="${CONFIG.dataPath}${esc(d.image)}?t=${Date.now()}" alt="Расписание группы на завтра">`
+          : `<p class="empty">${esc(d.note || "На завтра занятий нет.")}</p>`;
+        if (d.pdf) {const a = $("sched-pdf"); a.href = d.pdf; a.hidden = false;}
+      } catch (e) {fail("sched", "Расписание пока недоступно.");}
     }
 
     /* ===== ПОГОДА (Open-Meteo, без ключа) ===== */
@@ -123,7 +120,7 @@
         <div>Ветер<b>${Math.round(c.wind_speed_10m)} м/с</b></div>
         <div>Влажность<b>${c.relative_humidity_2m}%</b></div>
       </div>`;
-      } catch (e) { fail("weather", "Не удалось получить погоду."); }
+      } catch (e) {fail("weather", "Не удалось получить погоду.");}
     }
 
     /* ===== АВТОБУС =====
@@ -135,16 +132,16 @@
         $("bus-stop").textContent = d.stop || "";
         const now = new Date(), day = now.getDay();
         const list = (day === 0 || day === 6 ? d.weekend : d.weekday) || [];
-        const mins = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+        const mins = t => {const [h, m] = t.split(":").map(Number); return h * 60 + m;};
         const cur = now.getHours() * 60 + now.getMinutes();
         const next = list.filter(t => mins(t) >= cur);
-        if (!next.length) { $("bus").innerHTML = '<p class="empty">На сегодня рейсов больше нет.</p>'; return; }
+        if (!next.length) {$("bus").innerHTML = '<p class="empty">На сегодня рейсов больше нет.</p>'; return;}
         const left = mins(next[0]) - cur;
         $("bus").innerHTML = `
       <div class="bus-next"><div class="min">${left === 0 ? "сейчас" : left + " мин"}</div>
       <div class="at">${d.route ? "Маршрут " + esc(d.route) + " · " : ""}отправление в ${esc(next[0])}</div></div>
       <ul class="bus-later">${next.slice(1, 4).map(t => `<li><span>Следующий</span><b>${esc(t)}</b></li>`).join("")}</ul>`;
-      } catch (e) { fail("bus", "Расписание автобуса недоступно."); }
+      } catch (e) {fail("bus", "Расписание автобуса недоступно.");}
     }
 
     /* ===== НОВОСТИ =====
@@ -155,10 +152,10 @@
         $("news").innerHTML = list.length ? list.map(n => `
       <a class="news-item" href="${esc(n.url)}" target="_blank" rel="noopener">
         <div class="nt">${esc(n.title)}</div>
-        <div class="nd">${n.date ? new Date(n.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : ""}</div>
+        <div class="nd">${n.date ? new Date(n.date).toLocaleDateString("ru-RU", {day: "numeric", month: "long", year: "numeric"}) : ""}</div>
         <div class="ns">${esc(n.summary)}</div>
       </a>`).join("") : '<p class="empty">Новостей пока нет.</p>';
-      } catch (e) { fail("news", "Новости пока недоступны."); }
+      } catch (e) {fail("news", "Новости пока недоступны.");}
     }
 
     loadSchedule(); loadWeather(); loadBus(); loadNews();

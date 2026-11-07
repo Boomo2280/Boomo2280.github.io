@@ -307,3 +307,11 @@ main.portal {
     outline: 3px solid var(--teal);
     outline-offset: 2px
 }
+
+.sched-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+}

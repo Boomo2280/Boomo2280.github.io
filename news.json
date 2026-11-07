@@ -1,2 +1,20 @@
-[{"title":"Пример новости университета","date":"2026-11-01","summary":"Здесь будет краткий анонс новости с официального сайта.","url":"https://kf.mauniver.ru/"},
-{"title":"Вторая пример-новость","date":"2026-10-30","summary":"Скрипт-парсер заменит эти данные настоящими.","url":"https://kf.mauniver.ru/"}]
+[
+  {
+    "title": "ÐÑÐµ Ð½Ð¾Ð²Ð¾ÑÑÐ¸",
+    "date": "",
+    "summary": "",
+    "url": "https://kf.mauniver.ru/novosti/novosti.html"
+  },
+  {
+    "title": "ÐÑÐµ Ð½Ð¾Ð²Ð¾ÑÑÐ¸ Ð§ÐµÐ¼Ð¿Ð¸Ð¾Ð½Ð°Ñ Â«ÐÑÐ¾ÑÐµÑÑÐ¸Ð¾Ð½Ð°Ð»ÑÂ»",
+    "date": "",
+    "summary": "",
+    "url": "https://kf.mauniver.ru/novosti/professionali/novosti.html"
+  },
+  {
+    "title": "ÐÑÐµ Ð½Ð¾Ð²Ð¾ÑÑÐ¸ ÐÐ¸Ð»ÐµÑ Ð² Ð±ÑÐ´ÑÑÐµÐµ",
+    "date": "",
+    "summary": "",
+    "url": "https://kf.mauniver.ru/novosti/bilet-v-budushchee/novosti.html"
+  }
+]
