@@ -130,20 +130,30 @@
       try {
         const d = await getJSON("bus.json");
         $("bus-stop").textContent = d.stop || "";
-        const now = new Date(), day = now.getDay();
-        const list = (day === 0 || day === 6 ? d.weekend : d.weekday) || [];
+        const now = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+        // выбираем расписание, действующее сегодня
+        const periods = d.periods || [d];
+        const p = periods.find(x => (!x.from || x.from <= today) && (!x.to || today <= x.to))
+          || periods.filter(x => !x.from || x.from <= today).pop();   // если срок вышел — последнее прошедшее
+        if (!p) {$("bus").innerHTML = '<p class="empty">Расписание ещё не действует.</p>'; return;}
+
+        const day = now.getDay();
+        const list = (day === 0 || day === 6 ? p.weekend : p.weekday) || [];
         const mins = t => {const [h, m] = t.split(":").map(Number); return h * 60 + m;};
         const cur = now.getHours() * 60 + now.getMinutes();
         const next = list.filter(t => mins(t) >= cur);
         if (!next.length) {$("bus").innerHTML = '<p class="empty">На сегодня рейсов больше нет.</p>'; return;}
         const left = mins(next[0]) - cur;
+        const route = p.route || d.route;
         $("bus").innerHTML = `
       <div class="bus-next"><div class="min">${left === 0 ? "сейчас" : left + " мин"}</div>
-      <div class="at">${d.route ? "Маршрут " + esc(d.route) + " · " : ""}отправление в ${esc(next[0])}</div></div>
+      <div class="at">${route ? "Маршрут " + esc(route) + " · " : ""}отправление в ${esc(next[0])}</div></div>
       <ul class="bus-later">${next.slice(1, 4).map(t => `<li><span>Следующий</span><b>${esc(t)}</b></li>`).join("")}</ul>`;
       } catch (e) {fail("bus", "Расписание автобуса недоступно.");}
     }
-
     /* ===== НОВОСТИ =====
     news.json: [ {"title":"...","date":"2026-11-01","summary":"...","url":"https://..."} ] */
     async function loadNews() {
