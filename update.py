@@ -40,15 +40,28 @@ def target_date(now):
     return d
 
 
-def get(url, **kw):
+def get(url, timeout=(10, 30), **kw):
     """Запрос с проверкой сертификата; если у сайта проблемный сертификат — без проверки
     (мы только читаем публичные данные и ничего не отправляем)."""
     try:
-        return requests.get(url, headers=HEADERS, timeout=30, **kw)
+        return requests.get(url, headers=HEADERS, timeout=timeout, **kw)
     except requests.exceptions.SSLError:
         import urllib3
         urllib3.disable_warnings()
-        return requests.get(url, headers=HEADERS, timeout=30, verify=False, **kw)
+        return requests.get(url, headers=HEADERS, timeout=timeout, verify=False, **kw)
+
+
+def get_retry(url, tries=4, timeout=(20, 120)):
+    """Для медленного сайта: несколько попыток с растущей паузой."""
+    import time
+    for i in range(tries):
+        try:
+            return get(url, timeout=timeout)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            print(f"попытка {i + 1}/{tries}: {type(e).__name__}", file=sys.stderr)
+            if i == tries - 1:
+                raise
+            time.sleep(5 * (i + 1))
 
 
 # ---------------------- РАСПИСАНИЕ ----------------------
@@ -102,7 +115,7 @@ def get_schedule(now, out, debug=False):
     day = target_date(now)
     url = PDF_URL.format(d=day.strftime("%d.%m.%Y"))
     res = {"date": day.isoformat(), "pdf": url, "lessons": [], "image": None}
-    r = get(url)
+    r = get_retry(url)
     if r.status_code != 200 or not r.content.startswith(b"%PDF"):
         res.update(pdf=None, note=f"Расписание на {day.strftime('%d.%m')} ещё не опубликовано.")
         return res
@@ -130,7 +143,7 @@ def short(s, n=220):
 def news_from_rss():
     for path in ("feed", "rss", "rss.xml", "?feed=rss2", "news/rss"):
         try:
-            r = get(urljoin(BASE, path))
+            r = get(urljoin(BASE, path), timeout=(5, 10))
             if r.status_code != 200 or b"<item" not in r.content[:200000]:
                 continue
             items = []
