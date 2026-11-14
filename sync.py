@@ -5,6 +5,9 @@
 Планировщик Windows:  программа  python.exe   аргументы  sync.py   рабочая папка  = папка репозитория
 Лог пишется в update.log рядом со скриптом.
 """
+import glob
+import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -25,8 +28,26 @@ def log(msg):
         f.write(line + "\n")
 
 
+def find_git():
+    """Ищет git.exe: сначала в PATH, затем в обычных местах установки Windows."""
+    found = shutil.which("git")
+    if found:
+        return found
+    local = os.environ.get("LOCALAPPDATA", "")
+    candidates = [
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+        os.path.join(local, r"Programs\Git\cmd\git.exe"),
+        *sorted(glob.glob(os.path.join(local, r"GitHubDesktop\app-*\resources\app\git\cmd\git.exe")), reverse=True),
+    ]
+    return next((c for c in candidates if os.path.exists(c)), None)
+
+
+GIT = find_git()
+
+
 def git(*args):
-    r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    r = subprocess.run([GIT, *args], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     out = (r.stdout + r.stderr).strip()
     if out:
         log(f"git {' '.join(args)}: {out}")
@@ -35,12 +56,19 @@ def git(*args):
 
 def main():
     log("=== запуск ===")
-    git("pull", "--rebase", "--autostash")
+    if GIT:
+        log(f"git: {GIT}")
+        git("pull", "--rebase", "--autostash")
+    else:
+        log("git не найден: данные обновятся, но на GitHub отправлены не будут "
+            "(установите Git for Windows: https://git-scm.com/download/win)")
 
     fails = update.run(ROOT)
     if fails:
         log(f"обновление прошло с ошибками (частей с ошибкой: {fails}); отправляю то, что получилось")
 
+    if not GIT:
+        return 1
     for f in FILES:
         if (ROOT / f).exists():
             git("add", "-A", "--", f)
