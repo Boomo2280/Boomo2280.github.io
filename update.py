@@ -141,6 +141,16 @@ def decode(content):
     return content.decode("utf-8", errors="replace")
 
 
+def fix_mojibake(s):
+    """Чинит текст вида 'Ð\x92Ñ\x81Ðµ' (UTF-8, прочитанный как latin-1) -> 'Все'."""
+    if not isinstance(s, str) or not re.search(r"[ÐÑ]", s):
+        return s
+    try:
+        return s.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+
+
 def strip_tags(s):
     return clean(re.sub(r"<[^>]+>", " ", s or ""))
 
@@ -150,7 +160,7 @@ def short(s, n=200):
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
 
 
-NEWS_HREF = re.compile(r"/(?:novosti|news)/(?!page|\?)[^/?#]+", re.I)
+NEWS_HREF = re.compile(r"/(?:novosti|news)/(?!page|\?)[^/?#]+|/\d{6}-\d+/?", re.I)
 SKIP_TITLE = re.compile(r"^(все новости|архив|читать|подробнее|далее|ещё|еще)", re.I)
 
 
@@ -250,9 +260,10 @@ def save_image(url, out):
         return url
 
 
-def get_news(out):
+def get_news(out, debug=False):
     from bs4 import BeautifulSoup
-    soup = BeautifulSoup(decode(get_retry(BASE).content), "html.parser")
+    html = decode(get_retry(BASE).content)
+    soup = BeautifulSoup(html, "html.parser")
     items = []
     link = soup.find("link", type=re.compile(r"rss|atom", re.I))
     if link and link.get("href"):
@@ -261,7 +272,17 @@ def get_news(out):
         except Exception as e:
             print("RSS не разобран:", repr(e), file=sys.stderr)
     items = items or news_from_html(soup)
+    if debug or not items:
+        (out / "debug_home.html").write_text(html, encoding="utf-8")
+        seen = {}
+        for a in soup.find_all("a", href=True):
+            seen.setdefault(urljoin(BASE, a["href"]), clean(a.get_text(" "))[:70])
+        print(f"--- главная страница сохранена в debug_home.html; ссылок: {len(seen)}, новостей найдено: {len(items)}")
+        for h, t in list(seen.items())[:60]:
+            print("  ", h, "|", t)
     for it in items:
+        it["title"] = fix_mojibake(it["title"])
+        it["summary"] = fix_mojibake(it["summary"])
         if it.get("image"):
             it["image"] = save_image(it["image"], out)
     keep = {Path(i["image"]).name for i in items if i.get("image", "").startswith("news_img/")}
@@ -269,6 +290,19 @@ def get_news(out):
         if f.name not in keep:
             f.unlink()
     return items
+
+
+def repair_old_news(path):
+    """Если новости не обновились, хотя бы чиним «кракозябры» в старом news.json."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        fixed = [{**i, "title": fix_mojibake(i.get("title", "")), "summary": fix_mojibake(i.get("summary", ""))} for i in data]
+        fixed = [i for i in fixed if not SKIP_TITLE.match(i["title"])]      # убираем пункты меню («Все новости…»)
+        if fixed != data:
+            save(path, fixed)
+            print("старый news.json: кракозябры исправлены")
+    except Exception:
+        pass
 
 
 # ---------------------- MAIN ----------------------
@@ -288,12 +322,13 @@ def run(out, debug=False):
         fails += 1
         print("Ошибка расписания:", repr(e), file=sys.stderr)
     try:
-        news = get_news(out)
+        news = get_news(out, debug)
         if news:
             save(out / "news.json", news)
         else:
             fails += 1
-            print("Новости не найдены — старый news.json оставлен.", file=sys.stderr)
+            print("Новости не найдены — старый news.json оставлен (см. debug_home.html).", file=sys.stderr)
+            repair_old_news(out / "news.json")
     except Exception as e:
         fails += 1
         print("Ошибка новостей:", repr(e), file=sys.stderr)
