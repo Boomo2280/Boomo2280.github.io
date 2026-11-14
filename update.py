@@ -277,6 +277,12 @@ def get_news(out, debug=False):
         seen = {}
         for a in soup.find_all("a", href=True):
             seen.setdefault(urljoin(BASE, a["href"]), clean(a.get_text(" "))[:70])
+        for name, path in (("debug_skripty.js", "js/skripty.js"), ("debug_novosti.html", "novosti/novosti.html")):
+            try:
+                (out / name).write_text(decode(get_retry(urljoin(BASE, path), tries=2).content), encoding="utf-8")
+                print("сохранён", name)
+            except Exception as e:
+                print("не удалось скачать", path, repr(e), file=sys.stderr)
         print(f"--- главная страница сохранена в debug_home.html; ссылок: {len(seen)}, новостей найдено: {len(items)}")
         for h, t in list(seen.items())[:60]:
             print("  ", h, "|", t)
