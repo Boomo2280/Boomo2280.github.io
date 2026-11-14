@@ -255,11 +255,33 @@ main.portal {
 
 /* новости */
 .news-item {
-    display: block;
+    display: flex;
     padding: 14px 0;
     border-top: 1px solid var(--line);
     text-decoration: none;
-    color: inherit
+    color: inherit;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.news-img {
+    width: 112px;
+    height: 76px;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+    background: var(--tint);
+}
+
+.news-body {
+    min-width: 0;
+}
+
+@media (max-width: 520px) {
+    .news-img {
+        width: 84px;
+        height: 60px;
+    }
 }
 
 .news-item:first-of-type {

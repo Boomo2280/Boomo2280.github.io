@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 import requests
@@ -131,61 +131,144 @@ def get_schedule(now, out, debug=False):
 
 
 # ---------------------- НОВОСТИ ----------------------
+def decode(content):
+    """Сайт отдаёт UTF-8, но requests без charset в заголовках путает кодировку («кракозябры»)."""
+    for enc in ("utf-8", "cp1251"):
+        try:
+            return content.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return content.decode("utf-8", errors="replace")
+
+
 def strip_tags(s):
     return clean(re.sub(r"<[^>]+>", " ", s or ""))
 
 
-def short(s, n=220):
+def short(s, n=200):
     s = clean(s)
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
 
 
-def news_from_rss():
-    for path in ("feed", "rss", "rss.xml", "?feed=rss2", "news/rss"):
+NEWS_HREF = re.compile(r"/(?:novosti|news)/(?!page|\?)[^/?#]+", re.I)
+SKIP_TITLE = re.compile(r"^(все новости|архив|читать|подробнее|далее|ещё|еще)", re.I)
+
+
+def find_image(box):
+    """Картинка новости: <img> (в т.ч. ленивая) или background-image."""
+    for img in box.find_all("img"):
+        src = img.get("data-src") or img.get("data-lazy-src") or img.get("src") or ""
+        if not src and img.get("srcset"):
+            src = img["srcset"].split()[0]
+        if src and not src.startswith("data:") and not re.search(r"logo|icon|\.svg|sprite", src, re.I):
+            return urljoin(BASE, src)
+    for el in box.find_all(style=True):
+        m = re.search(r"url\(['\"]?([^'\")]+)", el["style"])
+        if m:
+            return urljoin(BASE, m[1])
+    return ""
+
+
+def parse_rss(content):
+    items = []
+    for it in ET.fromstring(content).iter("item"):
         try:
-            r = get(urljoin(BASE, path), timeout=(5, 10))
-            if r.status_code != 200 or b"<item" not in r.content[:200000]:
-                continue
-            items = []
-            for it in ET.fromstring(r.content).iter("item"):
-                try:
-                    date = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
-                except Exception:
-                    date = ""
-                items.append({"title": clean(it.findtext("title")), "date": date,
-                              "summary": short(strip_tags(it.findtext("description"))),
-                              "url": clean(it.findtext("link"))})
-            if items:
-                return items[:NEWS_LIMIT]
+            date = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
         except Exception:
-            continue
-    return []
+            date = ""
+        enc = it.find("enclosure")
+        items.append({"title": clean(it.findtext("title")), "date": date,
+                      "summary": short(strip_tags(it.findtext("description"))),
+                      "url": clean(it.findtext("link")),
+                      "image": enc.get("url", "") if enc is not None else ""})
+    return items[:NEWS_LIMIT]
 
 
-def news_from_html():
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(get(BASE).text, "html.parser")
-    seen, items = set(), []
-    for a in soup.find_all("a", href=True):
-        title = clean(a.get_text(" "))
-        href = urljoin(BASE, a["href"])
-        if len(title) < 20 or href in seen or not re.search(r"news|novost|article|post|/20\d\d", href, re.I):
+def news_from_html(soup):
+    links = [a for a in soup.find_all("a", href=True) if NEWS_HREF.search(urlparse(urljoin(BASE, a["href"])).path)]
+    hrefs = {urljoin(BASE, a["href"]).split("#")[0] for a in links}
+    order, items = [], {}
+    for a in links:
+        href = urljoin(BASE, a["href"]).split("#")[0]
+        if href not in items:
+            items[href] = a
+            order.append(href)
+    res = []
+    for href in order:
+        a = items[href]
+        # поднимаемся до карточки: пока внутри только эта новость
+        box = a
+        for _ in range(5):
+            par = box.parent
+            if par is None or par.name in ("body", "html"):
+                break
+            inside = {urljoin(BASE, x["href"]).split("#")[0] for x in par.find_all("a", href=True)} & hrefs
+            if inside - {href}:
+                break
+            box = par
+        titles = [clean(x.get_text(" ")) for x in box.find_all("a", href=True)
+                  if urljoin(BASE, x["href"]).split("#")[0] == href]
+        heading = box.find(["h1", "h2", "h3", "h4", "h5"])
+        title = clean(heading.get_text(" ")) if heading else ""
+        if not title:
+            title = max((t for t in titles if not SKIP_TITLE.match(t)), key=len, default="")
+        if len(title) < 12 or SKIP_TITLE.match(title):
             continue
-        seen.add(href)
-        box = a.find_parent(["article", "li", "div"]) or a
         text = clean(box.get_text(" "))
         m = re.search(r"(\d{2})\.(\d{2})\.(\d{4})", text)
-        date = f"{m[3]}-{m[2]}-{m[1]}" if m else ""
-        p = box.find("p")
-        summary = short(p.get_text(" ")) if p and clean(p.get_text()) != title else ""
-        items.append({"title": title, "date": date, "summary": summary, "url": href})
-        if len(items) >= NEWS_LIMIT:
+        slug = re.search(r"/(\d{2})(\d{2})(\d{2})-\d+", href)
+        date = f"{m[3]}-{m[2]}-{m[1]}" if m else (f"20{slug[1]}-{slug[2]}-{slug[3]}" if slug else "")
+        p = next((clean(x.get_text(" ")) for x in box.find_all("p") if len(clean(x.get_text())) > 30
+                  and clean(x.get_text()) != title), "")
+        res.append({"title": title, "date": date, "summary": short(p), "url": href, "image": find_image(box)})
+        if len(res) >= NEWS_LIMIT:
             break
+    return res
+
+
+def save_image(url, out):
+    """Скачивает картинку новости в news_img/ (уменьшенную). Если не вышло — оставляет ссылку."""
+    import hashlib
+    import cv2, numpy as np
+    name = hashlib.md5(url.encode()).hexdigest()[:12] + ".jpg"
+    path = out / "news_img" / name
+    if path.exists():
+        return f"news_img/{name}"
+    try:
+        r = get_retry(url, tries=2, timeout=(15, 60))
+        im = cv2.imdecode(np.frombuffer(r.content, np.uint8), cv2.IMREAD_COLOR)
+        if im is None:
+            return url
+        h, w = im.shape[:2]
+        if w > 640:
+            im = cv2.resize(im, (640, int(h * 640 / w)), interpolation=cv2.INTER_AREA)
+        path.parent.mkdir(exist_ok=True)
+        path.write_bytes(cv2.imencode(".jpg", im, [cv2.IMWRITE_JPEG_QUALITY, 82])[1].tobytes())
+        return f"news_img/{name}"
+    except Exception as e:
+        print("картинка не скачана:", url, repr(e), file=sys.stderr)
+        return url
+
+
+def get_news(out):
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(decode(get_retry(BASE).content), "html.parser")
+    items = []
+    link = soup.find("link", type=re.compile(r"rss|atom", re.I))
+    if link and link.get("href"):
+        try:
+            items = parse_rss(get_retry(urljoin(BASE, link["href"])).content)
+        except Exception as e:
+            print("RSS не разобран:", repr(e), file=sys.stderr)
+    items = items or news_from_html(soup)
+    for it in items:
+        if it.get("image"):
+            it["image"] = save_image(it["image"], out)
+    keep = {Path(i["image"]).name for i in items if i.get("image", "").startswith("news_img/")}
+    for f in (out / "news_img").glob("*.jpg") if (out / "news_img").exists() else []:
+        if f.name not in keep:
+            f.unlink()
     return items
-
-
-def get_news():
-    return news_from_rss() or news_from_html()
 
 
 # ---------------------- MAIN ----------------------
@@ -194,22 +277,18 @@ def save(path, obj):
     print("записан", path)
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=".")
-    ap.add_argument("--debug", action="store_true")
-    a = ap.parse_args()
-    out = Path(a.out)
+def run(out, debug=False):
+    """Обновляет файлы в папке out. Возвращает число неудачных частей (0, 1 или 2)."""
+    out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     now, fails = datetime.now(TZ), 0
-
     try:
-        save(out / "schedule.json", get_schedule(now, out, a.debug))
+        save(out / "schedule.json", get_schedule(now, out, debug))
     except Exception as e:
         fails += 1
         print("Ошибка расписания:", repr(e), file=sys.stderr)
     try:
-        news = get_news()
+        news = get_news(out)
         if news:
             save(out / "news.json", news)
         else:
@@ -218,7 +297,15 @@ def main():
     except Exception as e:
         fails += 1
         print("Ошибка новостей:", repr(e), file=sys.stderr)
-    sys.exit(1 if fails == 2 else 0)
+    return fails
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=".")
+    ap.add_argument("--debug", action="store_true")
+    a = ap.parse_args()
+    sys.exit(1 if run(a.out, a.debug) == 2 else 0)
 
 
 if __name__ == "__main__":

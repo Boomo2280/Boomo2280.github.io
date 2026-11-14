@@ -159,11 +159,15 @@
     async function loadNews() {
       try {
         const list = (await getJSON("news.json")).slice(0, CONFIG.newsLimit);
+        const imgSrc = s => /^https?:/.test(s) ? s : CONFIG.dataPath + s;
         $("news").innerHTML = list.length ? list.map(n => `
       <a class="news-item" href="${esc(n.url)}" target="_blank" rel="noopener">
-        <div class="nt">${esc(n.title)}</div>
-        <div class="nd">${n.date ? new Date(n.date).toLocaleDateString("ru-RU", {day: "numeric", month: "long", year: "numeric"}) : ""}</div>
-        <div class="ns">${esc(n.summary)}</div>
+        ${n.image ? `<img class="news-img" src="${esc(imgSrc(n.image))}" alt="" loading="lazy">` : ""}
+        <div class="news-body">
+          <div class="nt">${esc(n.title)}</div>
+          <div class="nd">${n.date ? new Date(n.date).toLocaleDateString("ru-RU", {day: "numeric", month: "long", year: "numeric"}) : ""}</div>
+          <div class="ns">${esc(n.summary)}</div>
+        </div>
       </a>`).join("") : '<p class="empty">Новостей пока нет.</p>';
       } catch (e) {fail("news", "Новости пока недоступны.");}
     }
