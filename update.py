@@ -5,12 +5,10 @@
          python update.py --out data (писать в папку data)
          python update.py --debug    (показать, что скрипт видит в PDF и на сайте)
 """
-import argparse, json, re, sys
-import xml.etree.ElementTree as ET
+import argparse, html as html_lib, json, re, sys
 from datetime import datetime, timedelta
-from email.utils import parsedate_to_datetime
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 import requests
@@ -131,6 +129,8 @@ def get_schedule(now, out, debug=False):
 
 
 # ---------------------- НОВОСТИ ----------------------
+# Новости сайта лежат в текстовом файле /novosti/<учебный год>.txt (например 2627.txt).
+# Каждая новость — 4 строки: номер (ггммдд-N), заголовок, имя картинки, краткий текст.
 def decode(content):
     """Сайт отдаёт UTF-8, но requests без charset в заголовках путает кодировку («кракозябры»)."""
     for enc in ("utf-8", "cp1251"):
@@ -152,7 +152,7 @@ def fix_mojibake(s):
 
 
 def strip_tags(s):
-    return clean(re.sub(r"<[^>]+>", " ", s or ""))
+    return clean(html_lib.unescape(re.sub(r"<[^>]+>", " ", s or "")))
 
 
 def short(s, n=200):
@@ -160,80 +160,35 @@ def short(s, n=200):
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
 
 
-NEWS_HREF = re.compile(r"/(?:novosti|news)/(?!page|\?)[^/?#]+|/\d{6}-\d+/?", re.I)
 SKIP_TITLE = re.compile(r"^(все новости|архив|читать|подробнее|далее|ещё|еще)", re.I)
+ID_RE = re.compile(r"^(\d{2})(\d{2})(\d{2})-(\d+)$")
 
 
-def find_image(box):
-    """Картинка новости: <img> (в т.ч. ленивая) или background-image."""
-    for img in box.find_all("img"):
-        src = img.get("data-src") or img.get("data-lazy-src") or img.get("src") or ""
-        if not src and img.get("srcset"):
-            src = img["srcset"].split()[0]
-        if src and not src.startswith("data:") and not re.search(r"logo|icon|\.svg|sprite", src, re.I):
-            return urljoin(BASE, src)
-    for el in box.find_all(style=True):
-        m = re.search(r"url\(['\"]?([^'\")]+)", el["style"])
-        if m:
-            return urljoin(BASE, m[1])
-    return ""
+def school_year_codes(now):
+    """Текущий и прошлый учебный год в формате сайта: 2026-27 -> '2627'."""
+    start = now.year % 100 if now.month >= 9 else now.year % 100 - 1
+    return [f"{start:02d}{start + 1:02d}", f"{start - 1:02d}{start:02d}"]
 
 
-def parse_rss(content):
+def news_from_txt(code):
+    r = get_retry(urljoin(BASE, f"novosti/{code}.txt"), tries=3)
+    if r.status_code != 200:
+        return []
+    lines = re.split(r"\r?\n", decode(r.content))
     items = []
-    for it in ET.fromstring(content).iter("item"):
-        try:
-            date = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
-        except Exception:
-            date = ""
-        enc = it.find("enclosure")
-        items.append({"title": clean(it.findtext("title")), "date": date,
-                      "summary": short(strip_tags(it.findtext("description"))),
-                      "url": clean(it.findtext("link")),
-                      "image": enc.get("url", "") if enc is not None else ""})
-    return items[:NEWS_LIMIT]
-
-
-def news_from_html(soup):
-    links = [a for a in soup.find_all("a", href=True) if NEWS_HREF.search(urlparse(urljoin(BASE, a["href"])).path)]
-    hrefs = {urljoin(BASE, a["href"]).split("#")[0] for a in links}
-    order, items = [], {}
-    for a in links:
-        href = urljoin(BASE, a["href"]).split("#")[0]
-        if href not in items:
-            items[href] = a
-            order.append(href)
-    res = []
-    for href in order:
-        a = items[href]
-        # поднимаемся до карточки: пока внутри только эта новость
-        box = a
-        for _ in range(5):
-            par = box.parent
-            if par is None or par.name in ("body", "html"):
-                break
-            inside = {urljoin(BASE, x["href"]).split("#")[0] for x in par.find_all("a", href=True)} & hrefs
-            if inside - {href}:
-                break
-            box = par
-        titles = [clean(x.get_text(" ")) for x in box.find_all("a", href=True)
-                  if urljoin(BASE, x["href"]).split("#")[0] == href]
-        heading = box.find(["h1", "h2", "h3", "h4", "h5"])
-        title = clean(heading.get_text(" ")) if heading else ""
-        if not title:
-            title = max((t for t in titles if not SKIP_TITLE.match(t)), key=len, default="")
-        if len(title) < 12 or SKIP_TITLE.match(title):
+    for i in range(0, len(lines) - 2, 4):
+        m = ID_RE.match(lines[i].strip())
+        if not m:
             continue
-        text = clean(box.get_text(" "))
-        m = re.search(r"(\d{2})\.(\d{2})\.(\d{4})", text)
-        slug = re.search(r"/(\d{2})(\d{2})(\d{2})-\d+", href)
-        date = f"{m[3]}-{m[2]}-{m[1]}" if m else (f"20{slug[1]}-{slug[2]}-{slug[3]}" if slug else "")
-        p = next((clean(x.get_text(" ")) for x in box.find_all("p") if len(clean(x.get_text())) > 30
-                  and clean(x.get_text()) != title), "")
-        res.append({"title": title, "date": date, "summary": short(p), "url": href, "image": find_image(box)})
-        if len(res) >= NEWS_LIMIT:
-            break
-    return res
+        nid, img = lines[i].strip(), lines[i + 2].strip()
+        items.append({
+            "title": strip_tags(lines[i + 1]),
+            "date": f"20{m[1]}-{m[2]}-{m[3]}",
+            "summary": short(strip_tags(lines[i + 3] if i + 3 < len(lines) else "")),
+            "url": urljoin(BASE, f"novosti/{nid}/{nid}.html"),
+            "image": urljoin(BASE, f"novosti/{nid}/original/{img}.jpg") if img else "",
+        })
+    return items
 
 
 def save_image(url, out):
@@ -260,32 +215,16 @@ def save_image(url, out):
         return url
 
 
-def get_news(out, debug=False):
-    from bs4 import BeautifulSoup
-    html = decode(get_retry(BASE).content)
-    soup = BeautifulSoup(html, "html.parser")
+def get_news(out, debug=False, now=None):
     items = []
-    link = soup.find("link", type=re.compile(r"rss|atom", re.I))
-    if link and link.get("href"):
+    for code in school_year_codes(now or datetime.now(TZ)):
         try:
-            items = parse_rss(get_retry(urljoin(BASE, link["href"])).content)
+            items += news_from_txt(code)
         except Exception as e:
-            print("RSS не разобран:", repr(e), file=sys.stderr)
-    items = items or news_from_html(soup)
-    if debug or not items:
-        (out / "debug_home.html").write_text(html, encoding="utf-8")
-        seen = {}
-        for a in soup.find_all("a", href=True):
-            seen.setdefault(urljoin(BASE, a["href"]), clean(a.get_text(" "))[:70])
-        for name, path in (("debug_skripty.js", "js/skripty.js"), ("debug_novosti.html", "novosti/novosti.html")):
-            try:
-                (out / name).write_text(decode(get_retry(urljoin(BASE, path), tries=2).content), encoding="utf-8")
-                print("сохранён", name)
-            except Exception as e:
-                print("не удалось скачать", path, repr(e), file=sys.stderr)
-        print(f"--- главная страница сохранена в debug_home.html; ссылок: {len(seen)}, новостей найдено: {len(items)}")
-        for h, t in list(seen.items())[:60]:
-            print("  ", h, "|", t)
+            print(f"новости {code}.txt не загружены:", repr(e), file=sys.stderr)
+        if len(items) >= NEWS_LIMIT:
+            break
+    items = items[:NEWS_LIMIT]
     for it in items:
         it["title"] = fix_mojibake(it["title"])
         it["summary"] = fix_mojibake(it["summary"])
@@ -333,7 +272,7 @@ def run(out, debug=False):
             save(out / "news.json", news)
         else:
             fails += 1
-            print("Новости не найдены — старый news.json оставлен (см. debug_home.html).", file=sys.stderr)
+            print("Новости не найдены — старый news.json оставлен.", file=sys.stderr)
             repair_old_news(out / "news.json")
     except Exception as e:
         fails += 1

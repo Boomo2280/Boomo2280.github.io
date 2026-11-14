@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>Филиал МАУ в г. Кировске - Новости</title>
+		<meta name="description" content="Филиал МАГУ в г. Кировске - Новости">
+		<meta name="keywords" content="Филиал МАГУ в г. Кировске, Филиал МАГУ, ХТК, Хибинский, технический, колледж, новости, события, мероприятия">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon">
+		<script src="/js/analytics.js"></script>
+		<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+      	<script src="https://code.jquery.com/jquery-migrate-4.0.2.min.js"></script>
+		<script src="/vendors/bootstrap/js/bootstrap.min.js"></script>
+		<script src="/js/skripty.js"></script>
+		<link href="/vendors/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="/css/stili.css" rel="stylesheet">
+		<script src="/vendors/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+		<script src="/vendors/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js"></script>
+		<link href="/vendors/bootstrap-datepicker/css/bootstrap-datepicker.min.css" rel="stylesheet">
+	</head>
+	<body>
+		<main>
+			<div class="container-fluid">
+				<div class="row">
+					<ol class="breadcrumb">
+						<li><a href="/index.html">Главная</a></li>
+						<li class="active">Новости</li>
+					</ol>
+				</div>
+				<div class="row">
+					<div class="col-md-8 col-md-offset-2 col-lg-8 col-lg-offset-2">
+						<h1 class="zagolovok-a">Новости</h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-8 col-md-offset-2">
+						<p>
+							<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#vibrat-god" aria-expanded="false" aria-controls="vibrat-god">
+								Выбрать год
+							</button>
+						</p>
+						<div class="collapse" id="vibrat-god">
+							<ul class="nav nav-tabs">
+								<li class="active"><a href="2627.html" target="_self">2026 - 2027</a></li>
+								<li><a href="2526.html" target="_self">2025 - 2026</a></li>
+								<li><a href="2425.html" target="_self">2024 - 2025</a></li>
+								<li><a href="2324.html" target="_self">2023 - 2024</a></li>
+								<li><a href="2223.html" target="_self">2022 - 2023</a></li>
+								<li><a href="2122.html" target="_self">2021 - 2022</a></li>
+								<li><a href="2021.html" target="_self">2020 - 2021</a></li>
+								<li><a href="1920.html" target="_self">2019 - 2020</a></li>
+								<li><a href="1819.html" target="_self">2018 - 2019</a></li>
+								<li><a href="1718.html" target="_self">2017 - 2018</a></li>
+								<li><a href="1617.html" target="_self">2016 - 2017</a></li>
+							</ul>	
+						</div>
+						<p class="text-right">
+							<a href="#" id="period-ssylka"><small>Период</small></a>
+						</p>
+						<div class="alert alert-success" role="alert" id="period-dialog" style="display: none">
+							<div class="row">
+								<div class="col-xs-11 col-sm-10 col-md-9">
+									<div class="input-group input-daterange">
+										<label for="nachalnaya-data" class="control-label input-group-addon"><small>с</small></label>
+										<input type="text" class="form-control" placeholder="Дата начала" id="nachalnaya-data">
+										<span class="input-group-addon"><span class="glyphicon glyphicon-remove" id="nachalnaya-data-ochistit"></span></span>				
+										<label for="konechnaya-data" class="control-label input-group-addon"><small>по</small></label>
+										<input type="text" class="form-control" placeholder="Дата окончания" id="konechnaya-data">
+										<span class="input-group-addon"><span class="glyphicon glyphicon-remove" id="konechnaya-data-ochistit"></span></span>				
+									</div>
+								</div>
+								<div class="col-xs-1 col-sm-2 col-md-3">
+									<button type="button" class="btn btn-success btn-sm pull-right" title="Применить период" id="period-knopka">
+									<span class="glyphicon glyphicon-filter"></span>
+									</button>
+								</div>
+							</div>
+						</div>
+						<div id="novosti-god"></div>
+						<script>
+							$(function () {
+								$('#period-knopka').on('click', function() {
+									$('#novosti-god').html(skripty.novosti('2627', undefined, undefined, $('#nachalnaya-data').val(), $('#konechnaya-data').val()));
+								});	
+								$('#nachalnaya-data-ochistit').click(function(){
+									$('#nachalnaya-data').val('').datepicker('update');
+								});
+								$('#konechnaya-data-ochistit').click(function(){
+									$('#konechnaya-data').val('').datepicker('update');
+								});
+								$('.input-daterange').datepicker({
+									format: 'dd.mm.yyyy',
+									language: 'ru-RU'
+								});
+								$('#period-ssylka').click(function() {
+									$('#period-dialog').toggle();
+								});
+								$('#novosti-god').html(skripty.novosti('2627'));
+							});
+						</script>					
+					</div>
+				</div>
+			</div>
+		</main>
+	</body>
+</html>
