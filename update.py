@@ -13,14 +13,13 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-# ===================== НАСТРОЙКИ =====================
 BASE = "https://kf.mauniver.ru/"
-GROUP = "1-ТЭСИС"                              # только для сообщений; поиск идёт по header_template.png
-PDF_URL = BASE + "raspisanie/{d}_s.pdf"      # {d} -> 09.11.2026
+GROUP = "1-ТЭСИС"                            
+PDF_URL = BASE + "raspisanie/{d}_s.pdf"     
 NEWS_LIMIT = 8
 TZ = ZoneInfo("Europe/Moscow")
-IMAGE_NAME = "schedule.png"      # куда сохраняется вырезанное расписание группы
-# =====================================================
+IMAGE_NAME = "schedule.png"      #
+
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                          "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
@@ -62,9 +61,7 @@ def get_retry(url, tries=4, timeout=(20, 120)):
             time.sleep(5 * (i + 1))
 
 
-# ---------------------- РАСПИСАНИЕ ----------------------
-# PDF университета — это картинка без текста. Скрипт находит на ней блок вашей
-# группы (по образцу заголовка header_template.png) и вырезает его в schedule.png.
+
 def render_pdf(data):
     import io, numpy as np, pdfplumber
     pages = []
@@ -128,9 +125,7 @@ def get_schedule(now, out, debug=False):
     return res
 
 
-# ---------------------- НОВОСТИ ----------------------
-# Новости сайта лежат в текстовом файле /novosti/<учебный год>.txt (например 2627.txt).
-# Каждая новость — 4 строки: номер (ггммдд-N), заголовок, имя картинки, краткий текст.
+
 def decode(content):
     """Сайт отдаёт UTF-8, но requests без charset в заголовках путает кодировку («кракозябры»)."""
     for enc in ("utf-8", "cp1251"):
@@ -250,7 +245,7 @@ def repair_old_news(path):
         pass
 
 
-# ---------------------- MAIN ----------------------
+
 def save(path, obj):
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
     print("записан", path)

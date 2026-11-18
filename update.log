@@ -51,3 +51,49 @@
 [2026-11-14 14:37:07] git push: To https://github.com/Boomo2280/Boomo2280.github.io.git
    88e5fd8..4deb7b3  main -> main
 [2026-11-14 14:37:07] готово: данные отправлены на GitHub
+[2026-11-14 14:50:24] === запуск ===
+[2026-11-14 14:50:24] git: C:\Program Files\Git\cmd\git.EXE
+[2026-11-14 14:50:25] git pull --rebase --autostash: Already up to date.
+[2026-11-14 14:50:31] git commit -m Автообновление данных 14.11.2026 14:50: [main dfe876e] Автообновление данных 14.11.2026 14:50
+ 9 files changed, 58 insertions(+), 1 deletion(-)
+ create mode 100644 news_img/a4977e9e8e1c.jpg
+ create mode 100644 news_img/cd96c625aeab.jpg
+ create mode 100644 news_img/e106be217593.jpg
+ create mode 100644 news_img/e55c2b3b7fbe.jpg
+ create mode 100644 news_img/e6802b5d99c3.jpg
+ create mode 100644 news_img/e6ad8e8c2b75.jpg
+ create mode 100644 news_img/ec9d8049793e.jpg
+ create mode 100644 news_img/ef3e47c15389.jpg
+[2026-11-14 14:50:34] git push: To https://github.com/Boomo2280/Boomo2280.github.io.git
+   d973c0e..dfe876e  main -> main
+[2026-11-14 14:50:34] готово: данные отправлены на GitHub
+[2026-11-16 16:47:22] === запуск ===
+[2026-11-16 16:47:22] git: C:\Program Files\Git\cmd\git.EXE
+[2026-11-16 16:47:23] git pull --rebase --autostash: fatal: unable to access 'https://github.com/Boomo2280/Boomo2280.github.io.git/': Failed to connect to github.com:443 after 330 ms: Could not connect to server
+[2026-11-16 16:47:33] git commit -m Автообновление данных 16.11.2026 16:47: [main 45e06be] Автообновление данных 16.11.2026 16:47
+ 7 files changed, 16 insertions(+), 16 deletions(-)
+ create mode 100644 news_img/038be59405f0.jpg
+ create mode 100644 news_img/3d8228dd07b8.jpg
+ delete mode 100644 news_img/cd96c625aeab.jpg
+ delete mode 100644 news_img/ef3e47c15389.jpg
+[2026-11-16 16:47:37] git push: To https://github.com/Boomo2280/Boomo2280.github.io.git
+   dfe876e..45e06be  main -> main
+[2026-11-16 16:47:37] готово: данные отправлены на GitHub
+[2026-11-17 16:43:36] === запуск ===
+[2026-11-17 16:43:36] git: C:\Program Files\Git\cmd\git.EXE
+[2026-11-17 16:43:38] git pull --rebase --autostash: Already up to date.
+[2026-11-17 16:43:42] git commit -m Автообновление данных 17.11.2026 16:43: [main 06b0bdf] Автообновление данных 17.11.2026 16:43
+ 5 files changed, 9 insertions(+), 9 deletions(-)
+ create mode 100644 news_img/9efd8a0d28b4.jpg
+ delete mode 100644 news_img/e106be217593.jpg
+[2026-11-17 16:43:45] git push: To https://github.com/Boomo2280/Boomo2280.github.io.git
+   45e06be..06b0bdf  main -> main
+[2026-11-17 16:43:45] готово: данные отправлены на GitHub
+[2026-11-18 16:43:51] === запуск ===
+[2026-11-18 16:43:51] git: C:\Program Files\Git\cmd\git.EXE
+[2026-11-18 16:43:53] git pull --rebase --autostash: Already up to date.
+[2026-11-18 16:43:59] git commit -m Автообновление данных 18.11.2026 16:43: [main fc32672] Автообновление данных 18.11.2026 16:43
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+[2026-11-18 16:44:02] git push: To https://github.com/Boomo2280/Boomo2280.github.io.git
+   06b0bdf..fc32672  main -> main
+[2026-11-18 16:44:02] готово: данные отправлены на GitHub

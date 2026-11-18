@@ -51,7 +51,7 @@
   <footer class="footer" id="footer"></footer>
 
   <script>
-    /* ===== МОДУЛИ (header / footer) ===== */
+  
     async function loadModule(id, url) {
       try {
         const html = await (await fetch(url)).text();
@@ -66,16 +66,14 @@
     }
     loadModule("header", "modules/header_nonreg.html");
     loadModule("footer", "modules/footer.html");
-
-    /* ===== НАСТРОЙКИ ===== */
+    
     const CONFIG = {
       city: "Кировск",
-      lat: 67.61, lon: 33.66,            // координаты для погоды
-      dataPath: "",                  // папка с schedule.json, bus.json, news.json
+      lat: 67.61, lon: 33.66,          
+      dataPath: "",                 
       newsLimit: 5
     };
 
-    /* ===== ВСПОМОГАТЕЛЬНОЕ ===== */
     const $ = id => document.getElementById(id);
     const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
     const getJSON = async f => {
@@ -85,9 +83,7 @@
     };
     const fail = (id, text) => {$(id).innerHTML = `<p class="err">${text}</p>`;};
 
-    /* ===== РАСПИСАНИЕ =====
-    schedule.json: { "date":"2026-11-03", "pdf":"https://...", "lessons":[
-      {"start":"08:30","end":"10:00","name":"Математика","room":"214","teacher":"Иванов И.И."} ] } */
+    
     async function loadSchedule() {
       try {
         const d = await getJSON("schedule.json");
@@ -99,7 +95,7 @@
       } catch (e) {fail("sched", "Расписание пока недоступно.");}
     }
 
-    /* ===== ПОГОДА (Open-Meteo, без ключа) ===== */
+    
     const WMO = {
       0: "Ясно", 1: "Преимущественно ясно", 2: "Переменная облачность", 3: "Пасмурно", 45: "Туман", 48: "Изморозь",
       51: "Морось", 53: "Морось", 55: "Сильная морось", 61: "Небольшой дождь", 63: "Дождь", 65: "Сильный дождь",
@@ -123,9 +119,7 @@
       } catch (e) {fail("weather", "Не удалось получить погоду.");}
     }
 
-    /* ===== АВТОБУС =====
-    bus.json: { "stop":"Название остановки", "route":"№ маршрута", "weekday":["07:10","07:40",...], "weekend":["09:00",...] }
-    Ближайший рейс считается в браузере. */
+    
     async function loadBus() {
       try {
         const d = await getJSON("bus.json");
@@ -134,7 +128,6 @@
         const pad = n => String(n).padStart(2, "0");
         const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
-        // выбираем расписание, действующее сегодня
         const periods = d.periods || [d];
         const p = periods.find(x => (!x.from || x.from <= today) && (!x.to || today <= x.to))
           || periods.filter(x => !x.from || x.from <= today).pop();   // если срок вышел — последнее прошедшее
@@ -154,8 +147,7 @@
       <ul class="bus-later">${next.slice(1, 4).map(t => `<li><span>Следующий</span><b>${esc(t)}</b></li>`).join("")}</ul>`;
       } catch (e) {fail("bus", "Расписание автобуса недоступно.");}
     }
-    /* ===== НОВОСТИ =====
-    news.json: [ {"title":"...","date":"2026-11-01","summary":"...","url":"https://..."} ] */
+   
     async function loadNews() {
       try {
         const list = (await getJSON("news.json")).slice(0, CONFIG.newsLimit);
