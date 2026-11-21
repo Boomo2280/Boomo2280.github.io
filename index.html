@@ -70,7 +70,7 @@
     const CONFIG = {
       city: "Кировск",
       lat: 67.61, lon: 33.66,
-      weatherKey: "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111&q=67.61%2033.66",
+      // weatherKey: "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111&q=67.61%2033.66",
       dataPath: "",
       newsLimit: 5
     };
@@ -106,6 +106,7 @@
 
     async function loadWeather() {
       $("w-city").textContent = CONFIG.city;
+      const URL = "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111&q=67.61%2C%2033.66&lang=ru";
       try {
         let c = null;
         try {   // кэш на 10 минут, чтобы не тратить запросы при каждом обновлении страницы
@@ -113,10 +114,10 @@
           if (s && Date.now() - s.t < 600000) c = s.c;
         } catch (e) { }
         if (!c) {
-          const u = `https://api.weatherapi.com/v1/current.json?key=${CONFIG.weatherKey}&q=${CONFIG.lat},${CONFIG.lon}&lang=ru`;
-          const r = await fetch(u);
-          if (!r.ok) throw new Error("WeatherAPI " + r.status);
-          const w = (await r.json()).current;
+          const r = await fetch(URL);
+          const j = await r.json();
+          if (!r.ok || !j.current) throw new Error(j.error ? `${j.error.code}: ${j.error.message}` : "HTTP " + r.status);
+          const w = j.current;
           c = {temp: w.temp_c, feels: w.feelslike_c, text: w.condition.text, wind: w.wind_kph / 3.6, humidity: w.humidity};
           try {localStorage.setItem("wx", JSON.stringify({t: Date.now(), c}));} catch (e) { }
         }
@@ -128,7 +129,10 @@
         <div>Ветер<b>${Math.round(c.wind)} м/с</b></div>
         <div>Влажность<b>${c.humidity}%</b></div>
       </div>`;
-      } catch (e) {fail("weather", "Не удалось получить погоду."); console.error(e);}
+      } catch (e) {
+        console.error("Погода:", e);
+        fail("weather", "Не удалось получить погоду: " + esc(e.message));
+      }
     }
     // async function loadWeather() {
     //   $("w-city").textContent = CONFIG.city;
