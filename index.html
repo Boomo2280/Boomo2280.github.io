@@ -70,7 +70,7 @@
     const CONFIG = {
       city: "Кировск",
       lat: 67.61, lon: 33.66,
-      weatherKey: "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111",
+      weatherKey: "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111&q=67.61%2033.66",
       dataPath: "",
       newsLimit: 5
     };
@@ -103,7 +103,7 @@
       71: "Небольшой снег", 73: "Снег", 75: "Сильный снегопад", 80: "Ливень", 81: "Ливень", 82: "Сильный ливень",
       85: "Снегопад", 86: "Сильный снегопад", 95: "Гроза", 96: "Гроза с градом", 99: "Гроза с градом"
     };
-    
+
     async function loadWeather() {
       $("w-city").textContent = CONFIG.city;
       try {
