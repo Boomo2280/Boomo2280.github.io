@@ -51,7 +51,7 @@
   <footer class="footer" id="footer"></footer>
 
   <script>
-  
+
     async function loadModule(id, url) {
       try {
         const html = await (await fetch(url)).text();
@@ -66,11 +66,12 @@
     }
     loadModule("header", "modules/header_nonreg.html");
     loadModule("footer", "modules/footer.html");
-    
+
     const CONFIG = {
       city: "Кировск",
-      lat: 67.61, lon: 33.66,          
-      dataPath: "",                 
+      lat: 67.61, lon: 33.66,
+      weatherKey: "https://api.weatherapi.com/v1/current.json?key=a10a59c0456e4efda88124838262111",
+      dataPath: "",
       newsLimit: 5
     };
 
@@ -83,7 +84,7 @@
     };
     const fail = (id, text) => {$(id).innerHTML = `<p class="err">${text}</p>`;};
 
-    
+
     async function loadSchedule() {
       try {
         const d = await getJSON("schedule.json");
@@ -95,31 +96,58 @@
       } catch (e) {fail("sched", "Расписание пока недоступно.");}
     }
 
-    
+
     const WMO = {
       0: "Ясно", 1: "Преимущественно ясно", 2: "Переменная облачность", 3: "Пасмурно", 45: "Туман", 48: "Изморозь",
       51: "Морось", 53: "Морось", 55: "Сильная морось", 61: "Небольшой дождь", 63: "Дождь", 65: "Сильный дождь",
       71: "Небольшой снег", 73: "Снег", 75: "Сильный снегопад", 80: "Ливень", 81: "Ливень", 82: "Сильный ливень",
       85: "Снегопад", 86: "Сильный снегопад", 95: "Гроза", 96: "Гроза с градом", 99: "Гроза с градом"
     };
+    
     async function loadWeather() {
       $("w-city").textContent = CONFIG.city;
       try {
-        const u = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.lat}&longitude=${CONFIG.lon}` +
-          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&wind_speed_unit=ms&timezone=auto`;
-        const c = (await (await fetch(u)).json()).current;
+        let c = null;
+        try {   // кэш на 10 минут, чтобы не тратить запросы при каждом обновлении страницы
+          const s = JSON.parse(localStorage.getItem("wx") || "null");
+          if (s && Date.now() - s.t < 600000) c = s.c;
+        } catch (e) { }
+        if (!c) {
+          const u = `https://api.weatherapi.com/v1/current.json?key=${CONFIG.weatherKey}&q=${CONFIG.lat},${CONFIG.lon}&lang=ru`;
+          const r = await fetch(u);
+          if (!r.ok) throw new Error("WeatherAPI " + r.status);
+          const w = (await r.json()).current;
+          c = {temp: w.temp_c, feels: w.feelslike_c, text: w.condition.text, wind: w.wind_kph / 3.6, humidity: w.humidity};
+          try {localStorage.setItem("wx", JSON.stringify({t: Date.now(), c}));} catch (e) { }
+        }
         $("weather").innerHTML = `
-      <div class="w-main"><div class="w-temp">${Math.round(c.temperature_2m)}°</div>
-      <div class="w-desc">${esc(WMO[c.weather_code] || "—")}</div></div>
+      <div class="w-main"><div class="w-temp">${Math.round(c.temp)}°</div>
+      <div class="w-desc">${esc(c.text)}</div></div>
       <div class="w-row">
-        <div>Ощущается<b>${Math.round(c.apparent_temperature)}°</b></div>
-        <div>Ветер<b>${Math.round(c.wind_speed_10m)} м/с</b></div>
-        <div>Влажность<b>${c.relative_humidity_2m}%</b></div>
+        <div>Ощущается<b>${Math.round(c.feels)}°</b></div>
+        <div>Ветер<b>${Math.round(c.wind)} м/с</b></div>
+        <div>Влажность<b>${c.humidity}%</b></div>
       </div>`;
-      } catch (e) {fail("weather", "Не удалось получить погоду.");}
+      } catch (e) {fail("weather", "Не удалось получить погоду."); console.error(e);}
     }
+    // async function loadWeather() {
+    //   $("w-city").textContent = CONFIG.city;
+    //   try {
+    //     const u = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.lat}&longitude=${CONFIG.lon}` +
+    //       `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&wind_speed_unit=ms&timezone=auto`;
+    //     const c = (await (await fetch(u)).json()).current;
+    //     $("weather").innerHTML = `
+    //   <div class="w-main"><div class="w-temp">${Math.round(c.temperature_2m)}°</div>
+    //   <div class="w-desc">${esc(WMO[c.weather_code] || "—")}</div></div>
+    //   <div class="w-row">
+    //     <div>Ощущается<b>${Math.round(c.apparent_temperature)}°</b></div>
+    //     <div>Ветер<b>${Math.round(c.wind_speed_10m)} м/с</b></div>
+    //     <div>Влажность<b>${c.relative_humidity_2m}%</b></div>
+    //   </div>`;
+    //   } catch (e) {fail("weather", "Не удалось получить погоду.");}
+    // }
 
-    
+
     async function loadBus() {
       try {
         const d = await getJSON("bus.json");
@@ -147,7 +175,7 @@
       <ul class="bus-later">${next.slice(1, 4).map(t => `<li><span>Следующий</span><b>${esc(t)}</b></li>`).join("")}</ul>`;
       } catch (e) {fail("bus", "Расписание автобуса недоступно.");}
     }
-   
+
     async function loadNews() {
       try {
         const list = (await getJSON("news.json")).slice(0, CONFIG.newsLimit);
@@ -165,8 +193,8 @@
     }
 
     loadSchedule(); loadWeather(); loadBus(); loadNews();
-    setInterval(loadBus, 60000);        // автобус — раз в минуту
-    setInterval(loadWeather, 600000);   // погода — раз в 10 минут
+    setInterval(loadBus, 60000);
+    setInterval(loadWeather, 600000);  
   </script>
 </body>
 
