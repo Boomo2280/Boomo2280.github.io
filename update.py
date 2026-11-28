@@ -16,7 +16,7 @@ import requests
 BASE = "https://kf.mauniver.ru/"
 GROUP = "1-ТЭСИС"                            
 PDF_URL = BASE + "raspisanie/{d}_s.pdf"     
-NEWS_LIMIT = 8
+NEWS_LIMIT = 3
 TZ = ZoneInfo("Europe/Moscow")
 IMAGE_NAME = "schedule.png"      #
 
@@ -30,7 +30,7 @@ def clean(x):
 
 
 def target_date(now):
-    """Завтра; если выходной — ближайший понедельник (пт -> пн)."""
+    
     d = now.date() + timedelta(days=1)
     while d.weekday() >= 5:
         d += timedelta(days=1)
@@ -38,8 +38,7 @@ def target_date(now):
 
 
 def get(url, timeout=(10, 30), **kw):
-    """Запрос с проверкой сертификата; если у сайта проблемный сертификат — без проверки
-    (мы только читаем публичные данные и ничего не отправляем)."""
+    
     try:
         return requests.get(url, headers=HEADERS, timeout=timeout, **kw)
     except requests.exceptions.SSLError:

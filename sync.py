@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+"""Один скрипт: подтянуть репозиторий -> обновить данные -> отправить на GitHub.
+
+Запуск вручную:       python sync.py
+Планировщик Windows:  программа  python.exe   аргументы  sync.py   рабочая папка  = папка репозитория
+Лог пишется в update.log рядом со скриптом.
+"""
 import glob
 import os
 import shutil
@@ -6,11 +13,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import update   
+import update   # update.py должен лежать рядом
 
 ROOT = Path(__file__).resolve().parent
 LOG = ROOT / "update.log"
-
+# что отправляем на GitHub (отсутствующие файлы пропускаются)
 FILES = ["schedule.json", "schedule.png", "news.json", "news_img"]
 
 
@@ -65,6 +72,7 @@ def main():
     for f in FILES:
         if (ROOT / f).exists():
             git("add", "-A", "--", f)
+    # ничего не изменилось -> выходим
     if git("diff", "--cached", "--quiet") == 0:
         log("изменений нет, отправлять нечего")
         return 0
